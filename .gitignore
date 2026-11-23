@@ -1,0 +1,17 @@
+# Files that never belong in the repository.
+# The Android app and the server each have their own .gitignore for their build output.
+
+# Secrets: API keys and local settings stay on your computer only
+.env
+*.env
+local.properties
+secrets.properties
+
+# Editors
+.idea/
+*.iml
+.vscode/
+
+# Operating systems
+.DS_Store
+Thumbs.db
