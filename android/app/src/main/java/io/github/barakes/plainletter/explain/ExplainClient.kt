@@ -21,10 +21,11 @@ object ExplainClient {
 
     private const val NO_CONNECTION = "אין חיבור לשרת. נסה שוב בעוד רגע."
     private const val BAD_TEXT = "הטקסט ריק או ארוך מדי."
+    private const val DAILY_LIMIT = "הגעת למספר ההסברים היומי. אפשר לנסות שוב מחר."
     private const val SERVER_ERROR = "משהו השתבש בשרת. נסה שוב."
     private const val BAD_ANSWER = "התשובה מהשרת לא הייתה תקינה. נסה שוב."
 
-    suspend fun explain(text: String): ExplainResult = withContext(Dispatchers.IO) {
+    suspend fun explain(text: String, deviceId: String): ExplainResult = withContext(Dispatchers.IO) {
         try {
             val connection = URL("$BASE_URL/api/explain").openConnection() as HttpURLConnection
             try {
@@ -34,6 +35,7 @@ object ExplainClient {
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("X-Device-Id", deviceId)
 
                 val body = JSONObject().put("text", text).toString()
                 connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
@@ -44,6 +46,7 @@ object ExplainClient {
                         ExplainResult.Success(parse(json))
                     }
                     400 -> ExplainResult.Failure(BAD_TEXT)
+                    429 -> ExplainResult.Failure(DAILY_LIMIT)
                     else -> ExplainResult.Failure(SERVER_ERROR)
                 }
             } finally {

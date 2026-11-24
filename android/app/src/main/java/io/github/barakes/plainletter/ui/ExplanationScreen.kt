@@ -25,8 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.barakes.plainletter.explain.DeviceId
 import io.github.barakes.plainletter.explain.ExplainClient
 import io.github.barakes.plainletter.explain.ExplainResult
 import io.github.barakes.plainletter.explain.Explanation
@@ -41,9 +43,10 @@ fun ExplanationScreen(
     var attempt by remember { mutableIntStateOf(0) }
     var result by remember(sentText) { mutableStateOf<ExplainResult?>(null) }
 
+    val context = LocalContext.current
     LaunchedEffect(sentText, attempt) {
         result = null
-        result = ExplainClient.explain(sentText)
+        result = ExplainClient.explain(sentText, DeviceId.get(context))
     }
 
     Column(
