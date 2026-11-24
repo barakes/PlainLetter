@@ -1,0 +1,74 @@
+package io.github.barakes.plainletter.explain
+
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+
+// Sends the redacted text to the server and reads the explanation.
+// Uses only what Android already has (HttpURLConnection and org.json), so no new libraries.
+object ExplainClient {
+
+    // The emulator reaches the computer it runs on at 10.0.2.2.
+    // This changes to the real address when the server is deployed.
+    private const val BASE_URL = "http://10.0.2.2:8080"
+
+    private const val TAG = "ExplainClient"
+
+    private const val NO_CONNECTION = "אין חיבור לשרת. נסה שוב בעוד רגע."
+    private const val BAD_TEXT = "הטקסט ריק או ארוך מדי."
+    private const val SERVER_ERROR = "משהו השתבש בשרת. נסה שוב."
+    private const val BAD_ANSWER = "התשובה מהשרת לא הייתה תקינה. נסה שוב."
+
+    suspend fun explain(text: String): ExplainResult = withContext(Dispatchers.IO) {
+        try {
+            val connection = URL("$BASE_URL/api/explain").openConnection() as HttpURLConnection
+            try {
+                connection.requestMethod = "POST"
+                connection.connectTimeout = 10_000
+                connection.readTimeout = 30_000
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connection.setRequestProperty("Accept", "application/json")
+
+                val body = JSONObject().put("text", text).toString()
+                connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+
+                when (connection.responseCode) {
+                    200 -> {
+                        val json = connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+                        ExplainResult.Success(parse(json))
+                    }
+                    400 -> ExplainResult.Failure(BAD_TEXT)
+                    else -> ExplainResult.Failure(SERVER_ERROR)
+                }
+            } finally {
+                connection.disconnect()
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "Request to server failed", e)
+            ExplainResult.Failure(NO_CONNECTION)
+        } catch (e: JSONException) {
+            Log.w(TAG, "Bad answer from server", e)
+            ExplainResult.Failure(BAD_ANSWER)
+        }
+    }
+
+    private fun parse(json: String): Explanation {
+        val root = JSONObject(json)
+        val array = root.getJSONArray("points")
+        val points = (0 until array.length()).map { index ->
+            val point = array.getJSONObject(index)
+            Point(text = point.getString("text"), quote = point.getString("quote"))
+        }
+        return Explanation(
+            summary = root.getString("summary"),
+            points = points,
+            disclaimer = root.getString("disclaimer"),
+        )
+    }
+}

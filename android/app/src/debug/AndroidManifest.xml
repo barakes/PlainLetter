@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only. Android 17 treats the computer running the emulator (10.0.2.2)
+     as a local network address, and apps need this permission to reach it.
+     The real app talks to a server on the internet, so release builds don't ask for it. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
+</manifest>

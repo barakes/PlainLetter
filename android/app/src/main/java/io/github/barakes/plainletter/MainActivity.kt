@@ -5,16 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -25,10 +19,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import io.github.barakes.plainletter.redaction.Redaction
 import io.github.barakes.plainletter.redaction.RedactionKind
 import io.github.barakes.plainletter.redaction.Redactor
+import io.github.barakes.plainletter.ui.ExplanationScreen
 import io.github.barakes.plainletter.ui.PasteScreen
 import io.github.barakes.plainletter.ui.ReviewScreen
 
@@ -49,7 +43,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { PASTE, REVIEW, PREVIEW }
+private enum class Screen { PASTE, REVIEW, RESULT }
 
 // Keeps the hidden details when the phone is rotated.
 private val RedactionsSaver = listSaver<List<Redaction>, Any>(
@@ -87,34 +81,18 @@ fun PlainLetterApp(modifier: Modifier = Modifier) {
                 redactions = redactions,
                 onRedactionsChange = { redactions = it },
                 onBack = { screen = Screen.PASTE },
-                onConfirm = { screen = Screen.PREVIEW },
+                onConfirm = { screen = Screen.RESULT },
                 modifier = modifier
             )
         }
 
-        Screen.PREVIEW -> {
+        Screen.RESULT -> {
             BackHandler { screen = Screen.REVIEW }
-            SentPreview(
+            ExplanationScreen(
                 sentText = Redactor.apply(text, redactions).text,
                 onBack = { screen = Screen.REVIEW },
                 modifier = modifier
             )
         }
-    }
-}
-
-// Temporary: in stage 4 this text will be sent to the server instead.
-@Composable
-private fun SentPreview(sentText: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(text = "זה הטקסט שיישלח לשרת:", style = MaterialTheme.typography.headlineSmall)
-        Text(text = sentText, style = MaterialTheme.typography.bodyLarge)
-        OutlinedButton(onClick = onBack) { Text("חזרה") }
     }
 }
