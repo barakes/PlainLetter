@@ -1,3 +1,14 @@
 spring:
   application:
     name: server
+
+server:
+  # On Render the server sits behind a proxy. "native" lets Tomcat read the real client address
+  # from X-Forwarded-For, trusting only the proxy's internal addresses, so a client can't fake it.
+  forward-headers-strategy: native
+
+# How many explanations a day. Counted in memory and reset at midnight Israel time.
+limits:
+  per-device: 10
+  per-ip: 30
+  total: 500
