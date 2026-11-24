@@ -19,15 +19,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import io.github.barakes.plainletter.redaction.Redaction
+import io.github.barakes.plainletter.redaction.RedactionKind
 import io.github.barakes.plainletter.redaction.Redactor
 import io.github.barakes.plainletter.ui.PasteScreen
+import io.github.barakes.plainletter.ui.ReviewScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MaterialTheme {
-                // האפליקציה בעברית בלבד, לכן מימין לשמאל גם כשהטלפון באנגלית
+                // The app is Hebrew only, so right-to-left even when the phone is set to English.
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                         PlainLetterApp(modifier = Modifier.padding(innerPadding))
@@ -46,32 +49,63 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private enum class Screen { PASTE, REVIEW, PREVIEW }
+
+// Keeps the hidden details when the phone is rotated.
+private val RedactionsSaver = listSaver<List<Redaction>, Any>(
+    save = { list -> list.flatMap { listOf(it.start, it.end, it.kind.name, it.original) } },
+    restore = { flat ->
+        flat.chunked(4).map {
+            Redaction(it[0] as Int, it[1] as Int, RedactionKind.valueOf(it[2] as String), it[3] as String)
+        }
+    }
+)
+
 @Composable
 fun PlainLetterApp(modifier: Modifier = Modifier) {
     var text by rememberSaveable { mutableStateOf("") }
-    var showPreview by rememberSaveable { mutableStateOf(false) }
+    var screen by rememberSaveable { mutableStateOf(Screen.PASTE) }
+    var redactions by rememberSaveable(stateSaver = RedactionsSaver) {
+        mutableStateOf(emptyList<Redaction>())
+    }
 
-    if (showPreview) {
-        BackHandler { showPreview = false }
-        RedactedPreview(
-            text = text,
-            onBack = { showPreview = false },
-            modifier = modifier
-        )
-    } else {
-        PasteScreen(
+    when (screen) {
+        Screen.PASTE -> PasteScreen(
             text = text,
             onTextChange = { text = it },
-            onContinue = { showPreview = true },
+            onContinue = {
+                redactions = Redactor.redact(text).redactions
+                screen = Screen.REVIEW
+            },
             modifier = modifier
         )
+
+        Screen.REVIEW -> {
+            BackHandler { screen = Screen.PASTE }
+            ReviewScreen(
+                original = text,
+                redactions = redactions,
+                onRedactionsChange = { redactions = it },
+                onBack = { screen = Screen.PASTE },
+                onConfirm = { screen = Screen.PREVIEW },
+                modifier = modifier
+            )
+        }
+
+        Screen.PREVIEW -> {
+            BackHandler { screen = Screen.REVIEW }
+            SentPreview(
+                sentText = Redactor.apply(text, redactions).text,
+                onBack = { screen = Screen.REVIEW },
+                modifier = modifier
+            )
+        }
     }
 }
 
-/** זמני: יוחלף בשלב הבא במסך האישור עם הסתרה בנגיעה. */
+// Temporary: in stage 4 this text will be sent to the server instead.
 @Composable
-private fun RedactedPreview(text: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    val result = remember(text) { Redactor.redact(text) }
+private fun SentPreview(sentText: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -79,13 +113,8 @@ private fun RedactedPreview(text: String, onBack: () -> Unit, modifier: Modifier
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "זה מה שיישלח:", style = MaterialTheme.typography.headlineSmall)
-        Text(text = result.text, style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = "הוסתרו ${result.redactions.size} פרטים",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text = "זה הטקסט שיישלח לשרת:", style = MaterialTheme.typography.headlineSmall)
+        Text(text = sentText, style = MaterialTheme.typography.bodyLarge)
         OutlinedButton(onClick = onBack) { Text("חזרה") }
     }
 }
