@@ -1,5 +1,6 @@
 package io.github.barakes.plainletter.server.explain
 
+import io.github.barakes.plainletter.server.limits.ClientAddress
 import io.github.barakes.plainletter.server.limits.LimitReachedException
 import io.github.barakes.plainletter.server.limits.RateLimiter
 import jakarta.servlet.http.HttpServletRequest
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 class ExplainController(
     private val provider: ExplanationProvider,
     private val limiter: RateLimiter,
+    private val clientAddress: ClientAddress,
 ) {
 
     // POST /api/explain with {"text": "..."} returns the explanation.
@@ -28,7 +30,7 @@ class ExplainController(
         @RequestHeader("X-Device-Id", required = false) deviceId: String?,
         http: HttpServletRequest,
     ): Explanation {
-        if (!limiter.tryAcquire(http.remoteAddr, deviceId?.take(64))) throw LimitReachedException()
+        if (!limiter.tryAcquire(clientAddress.of(http), deviceId?.take(64))) throw LimitReachedException()
         return Verifier.verify(request.text, provider.explain(request.text))
     }
 }

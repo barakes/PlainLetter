@@ -5,15 +5,17 @@ spring:
 server:
   # Render tells the server which port to use in PORT. On your computer it's 8080.
   port: ${PORT:8080}
-  # On Render the server sits behind a proxy. "native" lets Tomcat read the real client address
-  # from X-Forwarded-For, trusting only the proxy's internal addresses, so a client can't fake it.
-  forward-headers-strategy: native
 
 # How many explanations a day. Counted in memory and reset at midnight Israel time.
 limits:
   per-device: 10
   per-ip: 30
   total: 500
+  # Where the real client address comes from. Render sits behind Cloudflare, so the server itself
+  # sees a Cloudflare address. Checked on Render: Cloudflare writes CF-Connecting-IP itself and refuses
+  # requests that try to send it, while X-Forwarded-For can be faked by the client.
+  # Without the header (on your computer), the connection's own address is used.
+  client-ip-header: CF-Connecting-IP
 
 # Who writes the explanations: "fake" (no AI, the default) or "gemini".
 # To use Gemini, set EXPLAIN_PROVIDER=gemini in the run configuration. Tests always use "fake".
