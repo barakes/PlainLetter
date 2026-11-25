@@ -3,8 +3,11 @@ package io.github.barakes.plainletter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -13,18 +16,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import io.github.barakes.plainletter.ocr.HebrewOcr
 import io.github.barakes.plainletter.redaction.Redaction
 import io.github.barakes.plainletter.redaction.RedactionKind
 import io.github.barakes.plainletter.redaction.Redactor
 import io.github.barakes.plainletter.ui.ExplanationScreen
 import io.github.barakes.plainletter.ui.PasteScreen
 import io.github.barakes.plainletter.ui.ReviewScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,14 +71,44 @@ fun PlainLetterApp(modifier: Modifier = Modifier) {
         mutableStateOf(emptyList<Redaction>())
     }
 
+    // Reading a photo: the photo picker needs no permission, and the photo stays on the phone.
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var reading by remember { mutableStateOf(false) }
+    var photoMessage by remember { mutableStateOf<String?>(null) }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            reading = true
+            photoMessage = null
+            val result = HebrewOcr.read(context, uri)
+            reading = false
+            val found = result.getOrNull()
+            photoMessage = when {
+                found == null -> "לא הצלחנו לקרוא את התמונה. נסה תמונה אחרת, או הדבק את הטקסט."
+                found.isBlank() -> "לא מצאנו טקסט בתמונה. נסה תמונה חדה יותר, באור טוב."
+                else -> {
+                    text = found
+                    "זה הטקסט שזיהינו. כדאי לעבור עליו ולתקן מילים שזוהו לא נכון."
+                }
+            }
+        }
+    }
+
     when (screen) {
         Screen.PASTE -> PasteScreen(
             text = text,
             onTextChange = { text = it },
+            onPickPhoto = {
+                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
             onContinue = {
+                photoMessage = null
                 redactions = Redactor.redact(text).redactions
                 screen = Screen.REVIEW
             },
+            reading = reading,
+            message = photoMessage,
             modifier = modifier
         )
 

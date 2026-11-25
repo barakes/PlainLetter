@@ -19,6 +19,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Tesseract (Hebrew text recognition) is published on JitPack.
+        // Only this one library may come from there.
+        maven("https://jitpack.io") {
+            content {
+                includeGroupByRegex("cz\\.adaptech.*")
+            }
+        }
     }
 }
 
