@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 fun PasteScreen(
     text: String,
     onTextChange: (String) -> Unit,
+    onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
     onContinue: () -> Unit,
     reading: Boolean,
@@ -44,17 +45,26 @@ fun PasteScreen(
             style = MaterialTheme.typography.headlineMedium
         )
         Text(
-            text = "בחר תמונה של המכתב, או הדבק כאן את הטקסט שלו.",
+            text = "צלם את המכתב, או הדבק כאן את הטקסט שלו.",
             style = MaterialTheme.typography.bodyLarge
         )
         OutlinedButton(
-            onClick = onPickPhoto,
+            onClick = onTakePhoto,
             enabled = !reading,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
         ) {
-            Text(text = "בחר תמונה של מכתב", style = MaterialTheme.typography.titleMedium)
+            Text(text = "צלם את המכתב", style = MaterialTheme.typography.titleMedium)
+        }
+        OutlinedButton(
+            onClick = onPickPhoto,
+            enabled = !reading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+        ) {
+            Text(text = "בחר תמונה קיימת")
         }
 
         if (reading) {

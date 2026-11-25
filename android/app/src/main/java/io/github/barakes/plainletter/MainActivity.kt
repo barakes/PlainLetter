@@ -1,5 +1,7 @@
 package io.github.barakes.plainletter
 
+import android.content.ActivityNotFoundException
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -26,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import io.github.barakes.plainletter.ocr.HebrewOcr
+import io.github.barakes.plainletter.ocr.LetterPhoto
 import io.github.barakes.plainletter.redaction.Redaction
 import io.github.barakes.plainletter.redaction.RedactionKind
 import io.github.barakes.plainletter.redaction.Redactor
@@ -71,17 +74,19 @@ fun PlainLetterApp(modifier: Modifier = Modifier) {
         mutableStateOf(emptyList<Redaction>())
     }
 
-    // Reading a photo: the photo picker needs no permission, and the photo stays on the phone.
+    // Reading a photo. Neither the camera nor the photo picker needs a permission,
+    // and the photo stays on the phone: only the text, after the user approves it, is sent.
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var reading by remember { mutableStateOf(false) }
     var photoMessage by remember { mutableStateOf<String?>(null) }
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
+
+    fun readPhoto(uri: Uri, afterReading: () -> Unit = {}) {
         scope.launch {
             reading = true
             photoMessage = null
             val result = HebrewOcr.read(context, uri)
+            afterReading()
             reading = false
             val found = result.getOrNull()
             photoMessage = when {
@@ -95,10 +100,34 @@ fun PlainLetterApp(modifier: Modifier = Modifier) {
         }
     }
 
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) readPhoto(uri)
+    }
+
+    // Kept across screen rotation, because the camera app may rotate the phone.
+    var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val uri = cameraUri
+        if (saved && uri != null) {
+            readPhoto(uri, afterReading = { LetterPhoto.delete(context) })
+        } else {
+            LetterPhoto.delete(context)
+        }
+    }
+
     when (screen) {
         Screen.PASTE -> PasteScreen(
             text = text,
             onTextChange = { text = it },
+            onTakePhoto = {
+                val uri = LetterPhoto.newUri(context)
+                cameraUri = uri
+                try {
+                    camera.launch(uri)
+                } catch (e: ActivityNotFoundException) {
+                    photoMessage = "לא נמצאה מצלמה בטלפון. אפשר לבחור תמונה קיימת, או להדביק את הטקסט."
+                }
+            },
             onPickPhoto = {
                 photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
