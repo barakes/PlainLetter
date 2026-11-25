@@ -99,6 +99,11 @@ private fun Loading() {
     ) {
         CircularProgressIndicator()
         Text(text = "מכין הסבר...", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = "אם השירות לא היה בשימוש זמן מה, זה יכול לקחת עד דקה.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

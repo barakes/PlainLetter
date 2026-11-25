@@ -1,6 +1,7 @@
 package io.github.barakes.plainletter.explain
 
 import android.util.Log
+import io.github.barakes.plainletter.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONException
@@ -13,9 +14,8 @@ import java.net.URL
 // Uses only what Android already has (HttpURLConnection and org.json), so no new libraries.
 object ExplainClient {
 
-    // The emulator reaches the computer it runs on at 10.0.2.2.
-    // This changes to the real address when the server is deployed.
-    private const val BASE_URL = "http://10.0.2.2:8080"
+    // Set in app/build.gradle.kts.
+    private const val BASE_URL = BuildConfig.SERVER_URL
 
     private const val TAG = "ExplainClient"
 
@@ -32,8 +32,9 @@ object ExplainClient {
             try {
                 connection.requestMethod = "POST"
                 connection.connectTimeout = 10_000
-                // The server may try several AI models before answering, so give it time.
-                connection.readTimeout = 60_000
+                // The free server sleeps when unused and takes up to a minute to wake,
+                // and then may try several AI models. So give it time.
+                connection.readTimeout = 90_000
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 connection.setRequestProperty("Accept", "application/json")

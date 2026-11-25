@@ -17,6 +17,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The server the app talks to. To work with the server on your computer instead,
+        // change it to "http://10.0.2.2:8080" (debug builds only allow that address).
+        buildConfigField("String", "SERVER_URL", "\"https://plainletter.onrender.com\"")
     }
 
     buildTypes {
@@ -33,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
