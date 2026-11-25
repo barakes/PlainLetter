@@ -31,7 +31,8 @@ object ExplainClient {
             try {
                 connection.requestMethod = "POST"
                 connection.connectTimeout = 10_000
-                connection.readTimeout = 30_000
+                // The server may try several AI models before answering, so give it time.
+                connection.readTimeout = 60_000
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 connection.setRequestProperty("Accept", "application/json")

@@ -12,3 +12,14 @@ limits:
   per-device: 10
   per-ip: 30
   total: 500
+
+# Who writes the explanations: "fake" (no AI, the default) or "gemini".
+# To use Gemini, set EXPLAIN_PROVIDER=gemini in the run configuration. Tests always use "fake".
+explain:
+  provider: fake
+
+gemini:
+  # Comes only from the environment variable. Never write the key in this file.
+  api-key: ${GEMINI_API_KEY:}
+  # Tried in order. If one is busy (503 or 429) or too slow, the next one is tried.
+  models: gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite

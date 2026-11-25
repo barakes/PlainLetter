@@ -25,3 +25,6 @@ data class Point(
     // The exact words from the letter. The app will check that they really appear there.
     val quote: String,
 )
+
+// Added by the server to every explanation, whoever wrote it.
+const val DISCLAIMER = "ההסבר נועד לעזור להבין את המכתב, ואינו ייעוץ משפטי. במקרה של ספק, פנה לגוף ששלח את המכתב."

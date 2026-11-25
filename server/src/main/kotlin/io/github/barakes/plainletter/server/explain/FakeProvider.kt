@@ -1,10 +1,12 @@
 package io.github.barakes.plainletter.server.explain
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
 // A fake explanation, so the app and the server can be built and tested before any AI is connected.
-// It never sends the text anywhere.
+// It never sends the text anywhere. Used unless explain.provider is set to something else.
 @Component
+@ConditionalOnProperty(name = ["explain.provider"], havingValue = "fake", matchIfMissing = true)
 class FakeProvider : ExplanationProvider {
 
     override fun explain(text: String): Explanation {
@@ -20,9 +22,5 @@ class FakeProvider : ExplanationProvider {
             ),
             disclaimer = DISCLAIMER,
         )
-    }
-
-    companion object {
-        const val DISCLAIMER = "ההסבר נועד לעזור להבין את המכתב, ואינו ייעוץ משפטי. במקרה של ספק, פנה לגוף ששלח את המכתב."
     }
 }
