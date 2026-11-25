@@ -3,6 +3,8 @@ spring:
     name: server
 
 server:
+  # Render tells the server which port to use in PORT. On your computer it's 8080.
+  port: ${PORT:8080}
   # On Render the server sits behind a proxy. "native" lets Tomcat read the real client address
   # from X-Forwarded-For, trusting only the proxy's internal addresses, so a client can't fake it.
   forward-headers-strategy: native
