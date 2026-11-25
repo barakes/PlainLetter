@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.barakes.plainletter.explain.DeviceId
@@ -61,13 +62,15 @@ fun ExplanationScreen(
 
             is ExplainResult.Failure -> {
                 Text(text = current.message, style = MaterialTheme.typography.titleMedium)
-                Button(
-                    onClick = { attempt++ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                ) {
-                    Text(text = "נסה שוב", style = MaterialTheme.typography.titleMedium)
+                if (current.canRetry) {
+                    Button(
+                        onClick = { attempt++ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                    ) {
+                        Text(text = "נסה שוב", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
 
@@ -121,6 +124,14 @@ private fun ExplanationContent(explanation: Explanation) {
                         text = point.text,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 28.sp)
                     )
+                    if (!point.verified) {
+                        Text(
+                            text = "שים לב: לא הצלחנו לאמת את הנקודה הזו מול המכתב. בדוק אותה במכתב עצמו.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.error
+                        )
+                    }
                     if (point.quote.isNotBlank()) {
                         Surface(
                             color = colors.surfaceVariant,

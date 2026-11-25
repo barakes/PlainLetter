@@ -22,6 +22,7 @@ object ExplainClient {
     private const val NO_CONNECTION = "אין חיבור לשרת. נסה שוב בעוד רגע."
     private const val BAD_TEXT = "הטקסט ריק או ארוך מדי."
     private const val DAILY_LIMIT = "הגעת למספר ההסברים היומי. אפשר לנסות שוב מחר."
+    private const val BUSY = "השירות עמוס כרגע. נסה שוב בעוד כמה דקות."
     private const val SERVER_ERROR = "משהו השתבש בשרת. נסה שוב."
     private const val BAD_ANSWER = "התשובה מהשרת לא הייתה תקינה. נסה שוב."
 
@@ -47,7 +48,8 @@ object ExplainClient {
                         ExplainResult.Success(parse(json))
                     }
                     400 -> ExplainResult.Failure(BAD_TEXT)
-                    429 -> ExplainResult.Failure(DAILY_LIMIT)
+                    429 -> ExplainResult.Failure(DAILY_LIMIT, canRetry = false)
+                    503 -> ExplainResult.Failure(BUSY)
                     else -> ExplainResult.Failure(SERVER_ERROR)
                 }
             } finally {
@@ -67,7 +69,11 @@ object ExplainClient {
         val array = root.getJSONArray("points")
         val points = (0 until array.length()).map { index ->
             val point = array.getJSONObject(index)
-            Point(text = point.getString("text"), quote = point.getString("quote"))
+            Point(
+                text = point.getString("text"),
+                quote = point.getString("quote"),
+                verified = point.optBoolean("verified", true),
+            )
         }
         return Explanation(
             summary = root.getString("summary"),

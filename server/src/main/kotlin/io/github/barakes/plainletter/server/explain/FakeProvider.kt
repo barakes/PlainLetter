@@ -19,6 +19,8 @@ class FakeProvider : ExplanationProvider {
             summary = "זה הסבר לדוגמה. השרת עוד לא מחובר לבינה מלאכותית.",
             points = listOf(
                 Point(text = "כך נראית נקודה בהסבר, עם המילים מהמכתב שעליהן היא מבוססת.", quote = firstSentence.take(80)),
+                // On purpose not in the letter, so the app's warning for unverified points can be seen.
+                Point(text = "כך נראית נקודה שהשרת לא הצליח לאמת מול המכתב.", quote = "משפט שלא מופיע במכתב"),
             ),
             disclaimer = DISCLAIMER,
         )

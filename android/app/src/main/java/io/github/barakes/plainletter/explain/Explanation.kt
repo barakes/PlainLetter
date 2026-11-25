@@ -10,10 +10,13 @@ data class Explanation(
 data class Point(
     val text: String,
     val quote: String,
+    // Set by the server: the quote and the numbers were found in the letter.
+    val verified: Boolean = true,
 )
 
 // What came back from asking the server.
 sealed interface ExplainResult {
     data class Success(val explanation: Explanation) : ExplainResult
-    data class Failure(val message: String) : ExplainResult
+    // canRetry is false when trying again now won't help, like after the daily limit.
+    data class Failure(val message: String, val canRetry: Boolean = true) : ExplainResult
 }
