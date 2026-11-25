@@ -22,8 +22,11 @@ data class Explanation(
 
 data class Point(
     val text: String,
-    // The exact words from the letter. The app will check that they really appear there.
+    // The exact words from the letter that the point is based on.
     val quote: String,
+    // Set by the server, not by the AI: true only if the quote really appears in the letter
+    // and every number in the text appears there too. The app warns about points that aren't.
+    val verified: Boolean = true,
 )
 
 // Added by the server to every explanation, whoever wrote it.
